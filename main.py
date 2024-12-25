@@ -4,17 +4,30 @@ import key
 import requests
 import tkinter as tk
 
-geo_url = key.geo_url+key.api_key
+geo_url = key.geo_url
 
 response = requests.get(geo_url)
 
 if response.status_code == 200:
     print(f"OK: {response.status_code}")
+    #extract key containing status code (google geocoder api)
+    for (k, v) in response.json().items():
+        if k == 'status':
+            print(f"{k}: {v}")
 else:
     print(f"Failed to fetch data: Code {response.status_code}")
 
-print(response.json())
+#print(response.json())
 
+'''
+We must use json stdlib parsing to extract required data.
+Required data: results --> navigation_points --> location
+Below we use direct access method (explicit traversal) using brackets [][][]
+There are many more (and better) methods of traversal
+'''
+
+print(f"Latitude: {response.json()['results'][0]['navigation_points'][0]['location']['latitude']}")
+print(f"Longitude: {response.json()['results'][0]['navigation_points'][0]['location']['longitude']}")
 
 
 '''
