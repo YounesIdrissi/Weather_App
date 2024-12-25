@@ -4,35 +4,44 @@ import key
 import requests
 import tkinter as tk
 
+'''
+First Request.
+We must use json stdlib parsing to extract required data.
+Required geocoding data: results --> navigation_points --> location
+We utilize the direct access method (explicit traversal) using brackets [][][]
+There are many more (and better) methods of traversal
+'''
+
 geo_url = key.geo_url
 
 response = requests.get(geo_url)
 
+latitude = None
+longitude = None #declaring these so we can later check if they obtained a valid value
+
 if response.status_code == 200:
     print(f"OK: {response.status_code}")
-    #extract key containing status code (google geocoder api)
-    for (k, v) in response.json().items():
-        if k == 'status':
-            print(f"{k}: {v}")
+    try:
+        latitude = response.json()['results'][0]['navigation_points'][0]['location']['latitude']
+        longitude = response.json()['results'][0]['navigation_points'][0]['location']['longitude']
+        print(latitude)
+        print(longitude)
+    except: #OK status BUT index doesn't exist because of faulty user input
+        print(f"Error: {response.json()['status']}")
 else:
     print(f"Failed to fetch data: Code {response.status_code}")
 
-#print(response.json())
+#print(response.json()) #print response, if any (for troubleshooting purposes)
 
-'''
-We must use json stdlib parsing to extract required data.
-Required data: results --> navigation_points --> location
-Below we use direct access method (explicit traversal) using brackets [][][]
-There are many more (and better) methods of traversal
-'''
 
-print(f"Latitude: {response.json()['results'][0]['navigation_points'][0]['location']['latitude']}")
-print(f"Longitude: {response.json()['results'][0]['navigation_points'][0]['location']['longitude']}")
+
 
 
 '''
+Second Request.
 For weather.gov, the api endpoint for 12hr forecast is formatted like this:
 https://api.weather.gov/gridpoints/{office}/{gridX},{gridY}/forecast
+example --> url = 'https://api.weather.gov/gridpoints/TOP/31,80/forecast'
 
 
 To get this endpoint without entering/knowing the office name, we use:
@@ -43,17 +52,47 @@ the urls appear in the following format (similar to the first link above):
 https://api.weather.gov/gridpoints/{office}/{gridX},{gridY}/forecast
 '''
 
-#url = 'https://api.weather.gov/gridpoints/TOP/31,80/forecast'
-wea_url = 'https://api.weather.gov/points/39.7456,-97.0892'
+forecast_url = None #declaring this so we can later check if they obtained a valid value
 
-response = requests.get(wea_url) #response can be same variable because geo response not needed anymore
+if latitude and longitude: #if latitude and longitude exist, then execute (avoids error)
+    wea_url = f"https://api.weather.gov/points/{latitude},{longitude}"
 
-if response.status_code == 200:
-    print(f"OK: {response.status_code}")
-else:
-    print(f"Failed to fetch data: Code {response.status_code}")
+    response = requests.get(wea_url) #'response' can be same variable because geo 'response' not needed anymore
 
-print(response.json())
+    if response.status_code == 200:
+        print(f"OK: {response.status_code}")
+        forecast_url = response.json()['properties']['forecast']
+    else:
+        print(f"Failed to fetch data: Code {response.status_code}")
+
+    #print(response.json()) #print response, if any (for troubleshooting purposes)
+
+'''
+The last request (weather.gov API), using the forecast_url
+7 Day Forecast: properties --> periods (contains all weather data)
+We need the following data from each period:
+- 'number' (to process data --> increment all by 1, floor divide by 2, decrement all by 1
+(this is an example of algebraic (data) manipulation); day 0 is today, day 1 is tmrw, etc)
+- 'name' (direct implementation)
+- 'temperature'
+- 'detailedForecast'
+'''
+
+if forecast_url:
+
+    response = requests.get(forecast_url)
+
+    if response.status_code == 200:
+        print(f"OK: {response.status_code}")
+        #now we need to extract large data
+        weather_data = {}
+        n = 0
+        for i in response.json()['properties']['periods']:
+            print(i)
+    else:
+        print(f"Failed to fetch data: Code {response.status_code}")
+
+    #print(response.json()) #print response, if any (for troubleshooting purposes)
 
 
 
