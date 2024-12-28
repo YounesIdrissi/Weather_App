@@ -86,7 +86,7 @@ if forecast_url:
         print(f"OK: {response.status_code}")
         #now we need to extract large data
         weather_data = {}
-        n = 0
+        #n = 0 #we use this for number keys (see notes in book)
         for i in response.json()['properties']['periods']:
             print(i)
     else:
